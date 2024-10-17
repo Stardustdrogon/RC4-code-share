@@ -4,66 +4,13 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <math.h>
-
-// Set chip parameters
-#define MEMORY_SIZE 32768 // 32K x 8 RAM
-#define PIN_NUMBER 28
-#define ADDRESS_PIN 15
-#define ROW_DECODER_SIZE 512
-#define COLUMN_DECODER_SIZE 64
-#define DATA_PIN 8
-
-// Define decoder
-// Divide the address pins into row and column
-typedef enum
-{
-    ROW_DECODER,
-    COLUMN_DECODER
-} Decoder;
-// Based on chip
-Decoder decoder[ADDRESS_PIN] =
-{
-    //A14-A8
-    COLUMN_DECODER, COLUMN_DECODER, COLUMN_DECODER, COLUMN_DECODER, ROW_DECODER, ROW_DECODER, ROW_DECODER,
-    //A7-A0
-    ROW_DECODER, ROW_DECODER, ROW_DECODER, ROW_DECODER, ROW_DECODER, ROW_DECODER, COLUMN_DECODER, COLUMN_DECODER
-};
-
-// Define PIN   
-typedef enum
-{
-    PIN_TYPE_VCC,
-    PIN_TYPE_GND,
-    PIN_TYPE_CONTROL,
-    PIN_TYPE_ADDRESS,
-    PIN_TYPE_DATA
-} pin_type;
-
-typedef enum
-{
-    PIN_SIDE_LEFT,
-    PIN_SIDE_RIGHT
-} pin_side;
-
-typedef struct
-{
-    pin_type type;
-    pin_side side;
-    int index;
-} PIN;
-
-// Used for address decoding
-typedef struct
-{
-    int row;
-    int column;
-} Address;
+#include "sdram.h"
 
 // Define chip
 typedef struct
 {
     // Simulate RAM
-    uint8_t memory[ROW_DECODER_SIZE][COLUMN_DECODER_SIZE];
+    uint8_t memory[MEMORY_SIZE];
     PIN pins[PIN_NUMBER];
     // Vcc & GND, Used to simulate short-circuit
     int pin_vcc, pin_gnd;
@@ -177,12 +124,9 @@ void init_chip(Chip* chip)
     chip -> pin_gnd = 0;
 
     // Init Memory
-    for(int i = 0; i < ROW_DECODER_SIZE; i++)
+    for(int i = 0; i < MEMORY_SIZE; i++)
     {
-        for(int j = 0; j < COLUMN_DECODER_SIZE; j++)
-        {
-            chip -> memory[i][j] = 0;
-        }
+        chip -> memory[i] = 0;
     }
     for(int i = 0; i < ADDRESS_PIN; i++)
     {
@@ -296,25 +240,6 @@ void pin_short_circuit(Chip* chip, int short_pin1, int short_pin2)
     }
 }
 
-Address get_address(const int *arr, int length)
-{
-    Address value = {0, 0};
-    for(int i = 0; i < length; i++)
-    {
-        if(decoder[i] == ROW_DECODER)
-        {
-            value.row = (value.row << 1) | arr[i];
-            //printf("row = %d\n", value.row);
-        }
-        if(decoder[i] == COLUMN_DECODER)
-        {
-            value.column = (value.column << 1) | arr[i];
-            //printf("column = %d\n", value.column);
-        }
-    }
-    return value;
-}
-
 unsigned int arr_to_uint(const int *arr, int length)
 {
     unsigned int value = 0;
@@ -339,14 +264,13 @@ void write_memory(Chip* chip, const char *addressStr, const char *dataStr)
     pin_short_circuit(chip, chip -> short_pin1, chip -> short_pin2);
 
     // 15bit address translation row & column
-    Address address = get_address(chip -> addressArr, ADDRESS_PIN);
-    //printf("ROW_DECODER = %d ; COLUMN_DECODER = %d\n", address.row, address.column);
-    if(address.column >= COLUMN_DECODER_SIZE || address.row >= ROW_DECODER_SIZE)
+    int address = arr_to_uint(chip -> addressArr, ADDRESS_PIN);
+    if(address >= MEMORY_SIZE)
     {
         printf("Address out of range.\n");
         return;
     }
-    chip -> memory[address.row][address.column] = arr_to_uint(chip -> dataArr, DATA_PIN);
+    chip -> memory[address] = arr_to_uint(chip -> dataArr, DATA_PIN);
     printf("Write operation complete.\n\n");
 }
 
@@ -360,14 +284,13 @@ void read_memory(Chip* chip, const char *addressStr)
     pin_short_circuit(chip, chip -> short_pin1, chip -> short_pin2);
     
     // Translation
-    Address address = get_address(chip -> addressArr, 15);
-    //printf("ROW_DECODER = %d ; COLUMN_DECODER = %d\n", address.row, address.column);
-    if(address.column >= COLUMN_DECODER_SIZE || address.row >= ROW_DECODER_SIZE)
+    int address = arr_to_uint(chip -> addressArr, ADDRESS_PIN);
+    if(address >= MEMORY_SIZE)
     {
         printf("Address out of range.\n");
         return;
     }
-    uint8_t data = chip -> memory[address.row][address.column];
+    uint8_t data = chip -> memory[address];
 
     printf("Read binary data: ");
     print_binary_data(data);
