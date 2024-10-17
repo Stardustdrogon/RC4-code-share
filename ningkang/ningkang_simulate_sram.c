@@ -9,10 +9,10 @@
 #define ADDRESS_PIN 15
 #define IO_PINS 8
 #define CONTROL_PINS 3
-#define TOTAL_PINS (ADDRESS_PIN+IO_PINS+CONTROL_PINS+2)//包括VCC,GND
+#define TOTAL_PINS (ADDRESS_PIN+IO_PINS+CONTROL_PINS+2)//include VCC,GND
 
 
-//引脚类型
+//pin_type
 typedef enum{
     PIN_TYPE_ADDRESS,
     PIN_TYPE_IO,
@@ -25,20 +25,20 @@ typedef enum{
 
 //引脚
 typedef struct pin_str{
-    int number;//引脚编号
-    PinType type;//引脚类型
-    int index;//所属类型引脚的下标。如是adress引脚，是第0个adress引脚
+    int number;//pin number
+    PinType type;//pin type
+    int index;//pin index 
     
 }pin_str;
 
-//短路的引脚
+//short pin number
 int pin_1=0;
 int pin_2=0;
-//sram的memory
+//sram memory
 uint8_t sram[SRAM_SIZE]={0};
-//引脚表
+//pin table
 pin_str pin_table[TOTAL_PINS];
-//初始化引脚类型
+//init pin attribute
 void init_pin_table()
 {
     pin_table[0].number=1; pin_table[0].type=PIN_TYPE_ADDRESS; pin_table[0].index=5; 
@@ -74,16 +74,16 @@ void init_pin_table()
     pin_table[26].number=27; pin_table[26].type=PIN_TYPE_WE; pin_table[26].index=0; 
     pin_table[27].number=28; pin_table[27].type=PIN_TYPE_VCC; pin_table[27].index=0; 
 }
-//检查引脚类型
+//check pin 
 int check_pin_type()
 {
-    if((pin_1<1||pin_1>28)||(pin_2<1||pin_2>28))//pin1 pin2不在范围内
+    if((pin_1<1||pin_1>28)||(pin_2<1||pin_2>28))
     {
         return 0;
     }
     
 
-    //输入为vcc与adress或gnd与address
+    //vcc and adress or gnd and address
     if((pin_table[pin_1-1].type==PIN_TYPE_VCC||pin_table[pin_1-1].type==PIN_TYPE_GND)
         &&pin_table[pin_2-1].type==PIN_TYPE_ADDRESS)
     {
@@ -94,7 +94,7 @@ int check_pin_type()
     {
         return 1;
     }
-    //输入为vcc与IO或gnd与IO
+    //vcc and IO or gnd and IO
     if((pin_table[pin_1-1].type==PIN_TYPE_VCC||pin_table[pin_1-1].type==PIN_TYPE_GND)
         &&pin_table[pin_2-1].type==PIN_TYPE_IO)
     {
@@ -106,17 +106,17 @@ int check_pin_type()
         return 1;
     }
 
-    //两个pin相隔距离远
-    //去除分别位于左右两侧的情况
+    //The distance between the two pins is large
+    //Located on both sides
     if(abs(pin_1-pin_2)>1)
         return 0;
     if((pin_1==7&&pin_2==8)||(pin_1==21&&pin_2==22))
         return 0;
 
-    //io与address
+    //io and address
     if((pin_table[pin_1-1].type==PIN_TYPE_IO&&pin_table[pin_2-1].type==PIN_TYPE_ADDRESS)||(pin_table[pin_1-1].type==PIN_TYPE_ADDRESS&&pin_table[pin_2-1].type==PIN_TYPE_IO))
         return 1;
-    //输入pin类型不同
+    //pin type different
     if(pin_table[pin_1-1].type!=pin_table[pin_2-1].type)
     {
         return 0;
@@ -125,7 +125,7 @@ int check_pin_type()
     return 1;
 }
 
-//2进制转换10进制
+
 unsigned int binary_convert_decimal(const char *bin)
 {
     unsigned int dec=0;
@@ -138,7 +138,7 @@ unsigned int binary_convert_decimal(const char *bin)
     }
     return dec;
 }
-//10进制转换2进制
+
 char* decimal_convert_binary(unsigned int dec)
 {
     int len=8;
@@ -160,17 +160,18 @@ char* decimal_convert_binary(unsigned int dec)
      
     return bin;  
 }
-void input_pin_number()//输入短路pin number
+//input simulate pin number
+void input_pin_number()
 {
     printf("please input simulate Pin number:\n");
     scanf("%d %d",&pin_1,&pin_2);
 }
-//设置两个pin短路
+//set pin short
 void set_short(char *address_str, char *bin)
 {
     int index1,index2=0;
 
-    //其中一个是VCC
+    //one of is vcc
     if(pin_table[pin_1-1].type==PIN_TYPE_VCC||pin_table[pin_2-1].type==PIN_TYPE_VCC)
     {
 
@@ -194,7 +195,7 @@ void set_short(char *address_str, char *bin)
                 address_str[index1]='1';
             } 
         }
-    }//其中一个是GND
+    }//one of is gnd
     else if(pin_table[pin_1-1].type==PIN_TYPE_GND||pin_table[pin_2-1].type==PIN_TYPE_GND)
     {
 
@@ -218,18 +219,18 @@ void set_short(char *address_str, char *bin)
                 address_str[index1]='0';
             } 
         }
-    }else if(pin_table[pin_1-1].type==PIN_TYPE_IO && pin_table[pin_2-1].type==PIN_TYPE_IO)//两个IO短路
+    }else if(pin_table[pin_1-1].type==PIN_TYPE_IO && pin_table[pin_2-1].type==PIN_TYPE_IO)//two io short
     {
         index1=7-pin_table[pin_1-1].index;
         index2=7-pin_table[pin_2-1].index;
         //bin[index2]=bin[index1];
-        //將低电平拉高
+        
         if(bin[index1]=='1')
         {
             bin[index2]=bin[index1];
         }else
             bin[index1]=bin[index2];
-    }else if(pin_table[pin_1-1].type==PIN_TYPE_ADDRESS && pin_table[pin_2-1].type==PIN_TYPE_ADDRESS)  //两个address短路
+    }else if(pin_table[pin_1-1].type==PIN_TYPE_ADDRESS && pin_table[pin_2-1].type==PIN_TYPE_ADDRESS)  //two address short
     {
         index1=14-pin_table[pin_1-1].index;
         index2=14-pin_table[pin_2-1].index;
@@ -239,7 +240,7 @@ void set_short(char *address_str, char *bin)
             address_str[index2]=address_str[index1];
         }else
             address_str[index1]=address_str[index2];
-    }else{//io与address short
+    }else{//io and address short
         if(pin_table[pin_1-1].type==PIN_TYPE_ADDRESS)
         {
             index1=14-pin_table[pin_1-1].index;
@@ -259,7 +260,7 @@ void set_short(char *address_str, char *bin)
     }
 }
 
-//对某地址写入8bit数据
+//write
 uint8_t write_to_address(char *address_real,char *date_real,char *address_str, char *bin)
 {
     
@@ -268,8 +269,8 @@ uint8_t write_to_address(char *address_real,char *date_real,char *address_str, c
     uint8_t result=binary_convert_decimal(date_real);
     printf("write to address:%s(0x%x),%s(%u)\n",address_real,address1,date_real,result);
 
-    set_short(address_str,bin);//设置短路
-    //写入数据
+    
+    //write data
     unsigned int address=binary_convert_decimal(address_str);
     uint8_t data=binary_convert_decimal(bin);
     sram[address]=data;
@@ -278,7 +279,7 @@ uint8_t write_to_address(char *address_real,char *date_real,char *address_str, c
 }
 
 
-//对某地址读取8bit数据
+//read
 void read_to_address(const char *address_str)
 {
     unsigned int address=binary_convert_decimal(address_str);
@@ -290,7 +291,7 @@ void read_to_address(const char *address_str)
 }
 
 
-//对比写入和读取的数据，看pin_1和pin_2的bit位是否一致，
+//check data are same or not same
 void check_data(const char *address_str,const char *address_real,const char *write_data)
 {
     
@@ -302,7 +303,7 @@ void check_data(const char *address_str,const char *address_real,const char *wri
     
     unsigned int w_address=binary_convert_decimal(address_real);
 
-    if(result != w_data)//数据不一致
+    if(result != w_data)//check data same
     {
         printf("Writing and reading data not same!\n");
         if(pin_table[pin_1-1].type==PIN_TYPE_IO && pin_table[pin_2-1].type==PIN_TYPE_IO)
@@ -310,7 +311,7 @@ void check_data(const char *address_str,const char *address_real,const char *wri
             printf("two IO_PIN short:%d and %d short\n",pin_1,pin_2);
         }else if(pin_table[pin_1-1].type==PIN_TYPE_GND||pin_table[pin_2-1].type==PIN_TYPE_GND)
         {
-            printf("IO_PIN和GND_PIN short:%d %d\n",pin_1,pin_2);
+            printf("IO_PIN and GND_PIN short:%d %d\n",pin_1,pin_2);
         }
         else if((pin_table[pin_1-1].type==PIN_TYPE_ADDRESS &&pin_table[pin_2-1].type==PIN_TYPE_IO)  || (pin_table[pin_2-1].type==PIN_TYPE_ADDRESS &&pin_table[pin_1-1].type==PIN_TYPE_IO))
         {
@@ -318,7 +319,7 @@ void check_data(const char *address_str,const char *address_real,const char *wri
         }
         else
             printf("not %d and %d short cause!\n",pin_1,pin_2);
-    }else if(w_address != address){//检查地址一致
+    }else if(w_address != address){//check address same
         if(pin_table[pin_1-1].type==PIN_TYPE_VCC||pin_table[pin_2-1].type==PIN_TYPE_VCC)
         {
             printf("ADDRESS_PIN and VCC_PIN short:%d %d\n",pin_1,pin_2);
@@ -334,10 +335,10 @@ void check_data(const char *address_str,const char *address_real,const char *wri
 void test()
 {
     init_pin_table();
-    char address[16];//写入地址
-    char data[9];//写入数据
-    char write_data[9];//存储原始写入数据
-    char write_address[16];//存储原始写入地址
+    char address[16];//input address
+    char data[9];//input data
+    char write_data[9];//Store original data
+    char write_address[16];//Store original address
 
     while(1)
     {
@@ -354,7 +355,7 @@ void test()
             printf("--------------------\n");
             continue;
         }
-        //模拟short
+        //simulate short
         set_short(address,data);
         write_to_address(write_address,write_data,address,data);
         
