@@ -42,10 +42,10 @@ class NetworkMonitor:
     def handle_event(self, fileobj, mask):
         # 处理网络接口事件
         for msg in self.ip.get():
-            if msg['event'] == 'RTM_NEWLINK':
+            if msg['event'] == 'RTM_NEWLINK': # 接口状态变化事件
                 ifname = msg.get_attr('IFLA_IFNAME')
                 if ifname in self.monitored_interfaces:
-                    carrier = msg.get_attr('IFLA_CARRIER')
+                    carrier = msg.get_attr('IFLA_CARRIER') # 获取carrier状态
                     if carrier is not None:
                         if self.last_carrier.get(ifname) != carrier: # 只在carrier状态变化时记录
                             status = "connected" if carrier == 1 else "disconnected"
@@ -60,6 +60,7 @@ class NetworkMonitor:
             logging.info("Network monitoring started")
             self.ip.bind(groups=RTMGRP_LINK)
             
+            # 注册套接字到selector 
             self.selector.register(
                 self.ip.fileno(),
                 selectors.EVENT_READ,
@@ -68,9 +69,9 @@ class NetworkMonitor:
             
             while True:
                 events = self.selector.select()
-                for key, mask in events:
-                    callback = key.data
-                    callback(key.fileobj, mask)
+                for key, mask in events: 
+                    callback = key.data  # 获取回调函数
+                    callback(key.fileobj, mask) # 调用回调函数
                     
         except Exception as e:
             logging.error(f"Error in monitor: {e}")
