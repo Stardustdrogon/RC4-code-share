@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-import os
 import selectors
 from pyroute2 import IPRoute
 from pyroute2.netlink.rtnl import RTMGRP_LINK
